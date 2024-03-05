@@ -1,6 +1,3 @@
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 public class WeatherData
@@ -42,7 +39,7 @@ public class Main
 
     [JsonProperty("humidity")]
     public int Humidity { get; set; }
-    
+
     [JsonProperty("temp_min")]
     public double TempMin { get; set; }
 
@@ -61,6 +58,7 @@ public class WeatherService1
 
     public async Task<WeatherData> GetWeatherDataAsync(string city)
     {
+
         using (var client = new HttpClient())
         {
             var response = await client.GetAsync($"{BaseUrl}?q={city}&appid={ApiKey}&units=metric&lang=pl");
@@ -71,9 +69,11 @@ public class WeatherService1
             }
             else
             {
-                throw new Exception("jest problem…..");
+                throw new Exception("sprawdz czy dobrze wpisano miasto. jesli tak to jest problem....");
+
             }
         }
+
     }
 }
 public class WeatherService2
@@ -94,68 +94,63 @@ public class WeatherService2
             }
             else
             {
-                throw new Exception("jest problem…..");
+                throw new Exception("sprawdz czy dobrze wpisano miasto. jesli tak to jest problem....");
+
             }
+
         }
 
     }
+
+
+
 
     class Program
     {
         static async Task Main(string[] args)
         {
             Console.WriteLine("Witamy w WeatherCatchUp");
-
-            string city;
-            do
+            while(true) 
             {
                 Console.WriteLine("\nWprowadź nazwę miasta:");
-                city = Console.ReadLine();
-
-                
-                if (!IsValidCityName(city))
+                string city = Console.ReadLine();
+                if (IsValidCityName(city))
                 {
-                    Console.WriteLine("\nNazwa miasta może zawierać tylko litery. Spróbuj ponownie.");
-                    continue;
-                }
-
-
-                var weatherService1 = new WeatherService1();
-                var weatherService2 = new WeatherService2();
-                try
-                {
-                    var weatherData1 = await weatherService1.GetWeatherDataAsync(city);
-                    var weatherData2 = await weatherService2.GetWeatherDataAsync(city);
-
-                    Console.WriteLine($"\nTemperatura: {weatherData2.Main.Temperature}°C");
-                    Console.WriteLine($"Odczuwalna temperatura: {weatherData2.Main.FeelsLike}°C");
-                    Console.WriteLine($"Wilgotność: {weatherData2.Main.Humidity}%");
-                    Console.WriteLine($"Opis pogody: {weatherData2.Weather[0].Description}");
-                    Console.WriteLine($"Maksymalna temperatura: {weatherData2.Main.TempMax}°C");
-                    Console.WriteLine($"Minimalna temperatura: {weatherData2.Main.TempMin}°C");
-                    Console.WriteLine($"Ciśnienie: {weatherData2.Main.Pressure}hPa");
-
-                    
-                    Console.WriteLine("\nPrognoza pogody na kolejne 10 godziny:");
-                    var forecastForNextHours = weatherData1.List
-                        .Where(f => DateTime.Parse(f.DateText) - DateTime.Now <= TimeSpan.FromHours(10))
-                        .OrderBy(f => DateTime.Parse(f.DateText))
-                        .Take(10);
-
-                    foreach (var forecast in forecastForNextHours)
+                    var weatherService1 = new WeatherService1();
+                    var weatherService2 = new WeatherService2();
+                    try
                     {
-                        Console.WriteLine($"{forecast.DateText}: Temperatura: {forecast.Main.Temperature}°C, Wilgotność: {forecast.Main.Humidity}%, Opis: {forecast.Weather[0].Description}");
+                        var weatherData1 = await weatherService1.GetWeatherDataAsync(city);
+                        var weatherData2 = await weatherService2.GetWeatherDataAsync(city);
+                        Console.WriteLine($"\nTemperatura: {weatherData2.Main.Temperature}°C");
+                        Console.WriteLine($"Odczuwalna temperatura: {weatherData2.Main.FeelsLike}°C");
+                        Console.WriteLine($"Wilgotność: {weatherData2.Main.Humidity}%");
+                        Console.WriteLine($"Opis pogody: {weatherData2.Weather[0].Description}");
+                        Console.WriteLine($"Maksymalna temperatura: {weatherData2.Main.TempMax}°C");
+                        Console.WriteLine($"Minimalna temperatura: {weatherData2.Main.TempMin}°C");
+                        Console.WriteLine($"Ciśnienie: {weatherData2.Main.Pressure}hPa");
+                        Console.WriteLine("\nPrognoza pogody na kolejne godziny:");
+                        var forecastForNextHours = weatherData1.List
+                            .Where(f => DateTime.Parse(f.DateText) - DateTime.Now <= TimeSpan.FromHours(10))
+                            .OrderBy(f => DateTime.Parse(f.DateText))
+                            .Take(10);
+                        foreach (var forecast in forecastForNextHours)
+                        {
+                            Console.WriteLine($"{forecast.DateText}: Temperatura: {forecast.Main.Temperature}°C, Wilgotność: {forecast.Main.Humidity}%, Opis: {forecast.Weather[0].Description}");
+                        }
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Wystąpił błąd: {ex.Message}. lub sprobuj ponownie ");
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Console.WriteLine($"Wystąpił błąd: {ex.Message}. Spróbuj ponownie.");
+                    Console.WriteLine("\nNazwa miasta może zawierać tylko litery. Spróbuj ponownie.");
                 }
-
-            } while (string.IsNullOrEmpty(city) || !IsValidCityName(city));
+            }
         }
-
-        
         private static bool IsValidCityName(string name)
         {
             return name.All(char.IsLetter);
